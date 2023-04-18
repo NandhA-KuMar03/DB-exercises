@@ -1,0 +1,129 @@
+-- 1 Write a SQL query to remove the details of an employee whose first name ends in ‘even’
+
+select * from employees where lower(first_name) like '%even';
+
+delete from employees where lower(first_name) like '%even';
+
+
+-- 2 Write a query in SQL to show the three minimum values of the salary from the table.
+select salary from employees order by salary asc limit 3;
+
+
+-- 3.Write a SQL query to remove the employees table from the database
+-- drop table employees;
+
+
+-- 4 Write a SQL query to copy the details of this table into a new table with table name as Employee table and to delete the records in employees table
+create table employee_table if not exists as select * from employees;
+select * from employee_table;
+
+
+-- 5 Write a SQL query to remove the column Age from the table
+-- alter table employee_table add column age int;
+alter table employee_table drop column age;
+select * from employee_table;
+
+
+-- 6 Obtain the list of employees (their full name, email, hire_year) where they have joined the firm before 2000
+select concat_ws(' ' ,first_name,last_name) as Full_Name, email, year(hire_date) from employees where year(hire_date)<2000;
+
+
+-- 7 Fetch the employee_id and job_id of those employees whose start year lies in the range of 1990 and 1999
+select employee_id,job_id,hire_date from employees where year(hire_date) BETWEEN 1990 and 1999 order by year(hire_date) desc;
+
+
+-- 8 Find the first occurrence of the letter 'A' in each employees Email ID Return the employee_id, email id and the letter position
+select email, employee_id, charindex('a', lower(email)) as letter_position from employees where letter_position >0;
+
+select email, employee_id , regexp_instr(lower(email) , 'a') as letter_position from employees where letter_position >0;
+
+
+-- 9 Fetch the list of employees(Employee_id, full name, email) whose full name holds characters less than 12
+select employee_id, concat(first_name, last_name), email from employees where length(concat(first_name, last_name))<12;
+
+
+-- 10 Create a unique string by hyphenating the first name, last name , and email of the employees to obtain a new field named UNQ_ID Return the employee_id, and their corresponding UNQ_ID;
+select employee_id, concat_ws('-', first_name, last_name, email) as UNIQ_ID from employees;
+
+
+-- 11 Write a SQL query to update the size of email column to 30
+alter table employees modify column email varchar(30);
+
+
+-- 12 Fetch all employees with their first name , email , phone (without extension part) and extension (just the extension) Info : this mean you need to separate phone into 2 parts 
+select * from employees;
+select first_name, email , reverse(substr(reverse(phone_number), position('.' in reverse(phone_number))+1 , length(phone_number)-1)) as phone_number ,RIGHT(phone_number, CHARINDEX('.', REVERSE(phone_number)) -1) as EXTENSION FROM employees;
+
+
+-- 13 Write a SQL query to find the employee with second and third maximum salary. 
+select * from employees order by salary desc limit 2 offset 2;
+
+
+-- 14  Fetch all details of top 3 highly paid employees who are in department Shipping and IT
+select * from employees where department_id = 50 or department_id = 60 order by salary desc limit 3;
+
+select * from employees
+inner join
+departments on
+employees.department_id = departments.department_id
+where departments.department_name = 'Shipping' or departments.department_name = 'IT'
+order by salary desc limit 3;
+
+-- 15 Display employee id and the positions(jobs) held by that employee (including the current position)
+select employee_id from employees intersect select employee_id from job_history;
+select * from job_history;
+select employee_id , JOB_ID from employees
+union
+select EMPLOYEE_ID , JOB_ID FROM JOB_HISTORY
+ORDER BY EMPLOYEE_ID; 
+
+
+-- 16 Display Employee first name and date joined as WeekDay, Month Day, Year Eg : 
+-- Emp ID      Date Joined
+-- Monday, June 21st, 1999
+select employee_id, concat_ws(' ',dayname(hire_date), monthname(hire_date),day(hire_date), year(hire_date)) as day_joined from employees;
+
+select employee_id , concat_ws(' ' , date_format(hire_date , "%W" ) , date_format(hire_date , "%b") , date_format(hire_date , "%D") , date_format(hire_date , "%Y") as day_joined from employees;
+
+-- 17 The company holds a new job opening for Data Engineer (DT_ENGG) with a minimum salary of 12,000 and maximum salary of 30,000 .  The job position might be removed based on market trends (so, save the changes) .   - Later, update the maximum salary to 40,000 .  - Save the entries as well.
+-- -  Now, revert back the changes to the initial state, where the salary was 30,000
+alter session set autocommit = false;
+insert into jobs values('DT_ENGG' , 'Data Engineer' , 12000, 30000);
+commit;
+update jobs set max_salary = 40000 where job_id = 'DT_ENGG';
+select * from jobs;
+rollback;
+alter session set autocommit = true;
+
+start transaction;
+savepoint ins;
+alter session set autocommit = false;
+insert into jobs values('DT_ENGG' , 'Data Engineer' , 12000, 30000);
+select * from jobs;
+
+savepoint upd;
+update jobs set max_salary = 40000 where job_id = 'DT_ENGG';
+select * from jobs;
+
+savepoint upd2;
+update jobs set max_salary = 60000 where job_id = 'DT_ENGG';
+select * from jobs;
+
+rollback upd;
+rollback upd2;
+
+commit;
+alter session set autocommit = true;
+
+-- 18 Find the average salary of all the employees who got hired after 8th January 1996 but before 1st January 2000 and round the result to 3 decimals
+select round(Avg(salary),3) as avg_salary from employees where hire_date BETWEEN '1996-01-28' AND '2000-01-01';
+
+
+-- 19A  Display  Australia, Asia, Antarctica, Europe along with the regions in the region table (Note: Do not insert data into the table)
+-- A. Display all the regions
+select region_name from regions
+union all select 'Australia' union all select 'Antarctica' union all select 'Asia' union all select 'Europe';
+
+-- B. Display all the unique regions
+select region_name from regions
+union select 'Australia' union select 'Antarctica' union select 'Asia' union select 'Europe';
